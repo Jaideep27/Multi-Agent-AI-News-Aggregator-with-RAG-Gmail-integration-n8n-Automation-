@@ -1,0 +1,155 @@
+{
+  "name": "AI News - Hourly Email Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-hourly",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/v1/email/send",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "hours",
+              "value": "={{ $json.hours || 24 }}"
+            },
+            {
+              "name": "top_n",
+              "value": "={{ $json.top_n || 10 }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": false,
+              "neverError": false,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "http-send-email",
+      "name": "Send Email Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300],
+      "notes": "Calls FastAPI endpoint to send hourly digest"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-success",
+      "name": "Email Sent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [690, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "content": "=✅ AI News Digest Sent\n\nTime: {{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}\nArticles: {{ $json.articles_count }}\nRecipient: {{ $json.recipient }}\nMessage: {{ $json.message }}",
+        "additionalFields": {}
+      },
+      "id": "sticky-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [910, 180],
+      "notes": "Success log"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "content": "=❌ Email Failed\n\nTime: {{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}\nError: {{ $json.error || 'Unknown error' }}\nStatus: {{ $json.statusCode || 'N/A' }}",
+        "additionalFields": {}
+      },
+      "id": "sticky-error",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [910, 420],
+      "notes": "Error log"
+    }
+  ],
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Send Email Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Digest": {
+      "main": [
+        [
+          {
+            "node": "Email Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Sent?": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-28T00:00:00.000Z",
+  "versionId": "1"
+}

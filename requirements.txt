@@ -1,0 +1,49 @@
+# Core dependencies
+crawl4ai>=0.7.7
+feedparser>=6.0.12
+markdown>=3.7.0
+markdownify>=0.11.6
+google-genai>=1.52.0
+psycopg2-binary>=2.9.11
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.2.1
+requests>=2.32.5
+sqlalchemy>=2.0.44
+youtube-transcript-api>=1.2.3
+
+# LangChain & LangGraph
+langgraph>=0.2.55
+langchain>=0.3.16
+langchain-google-genai>=2.0.8
+langchain-chroma>=0.1.4
+langchain-community>=0.3.15
+
+# Vector Store & Embeddings
+chromadb>=0.5.23
+sentence-transformers>=3.3.1
+
+# API & Web Framework (optional)
+fastapi>=0.115.6
+uvicorn[standard]>=0.32.1
+fastmcp>=0.2.0
+
+# Async & Task Queue (optional)
+celery>=5.4.0
+redis>=5.2.1
+
+# Monitoring & Logging
+prometheus-client>=0.21.0
+structlog>=24.4.0
+
+# HTTP & Utilities
+httpx>=0.28.1
+tenacity>=9.0.0
+python-multipart>=0.0.19
+
+# CLI & UI
+click>=8.1.8
+rich>=13.9.4
+streamlit>=1.32.0
+plotly>=5.19.0
+pandas>=2.2.0

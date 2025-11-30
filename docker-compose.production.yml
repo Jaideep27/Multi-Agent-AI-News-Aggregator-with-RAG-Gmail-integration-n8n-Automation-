@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-news-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_news}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ai-news-network
+
+  # FastAPI Server
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-news-fastapi
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      # Database
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-ai_news}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+
+      # API Keys
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+      # Email
+      MY_EMAIL: ${MY_EMAIL}
+      APP_PASSWORD: ${APP_PASSWORD}
+
+      # ChromaDB
+      CHROMA_PERSIST_DIRECTORY: /app/chromadb_data
+    volumes:
+      - ./chromadb_data:/app/chromadb_data
+      - ./.env:/app/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ai-news-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Streamlit UI
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-news-streamlit
+    restart: unless-stopped
+    command: streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      # Database
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-ai_news}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+
+      # API Keys
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+
+      # ChromaDB
+      CHROMA_PERSIST_DIRECTORY: /app/chromadb_data
+    volumes:
+      - ./chromadb_data:/app/chromadb_data
+      - ./.env:/app/.env
+    depends_on:
+      - postgres
+      - fastapi
+    networks:
+      - ai-news-network
+
+  # n8n Workflow Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: ai-news-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=UTC
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n_workflows:/home/node/.n8n/workflows-import:ro
+    depends_on:
+      - fastapi
+    networks:
+      - ai-news-network
+
+networks:
+  ai-news-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ai-news-postgres-data
+  n8n_data:
+    name: ai-news-n8n-data

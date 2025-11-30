@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Data
+chromadb_data/
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Documentation
+*.md
+docs/
+
+# Tests
+tests/
+__tests__/
+*.test.py
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
